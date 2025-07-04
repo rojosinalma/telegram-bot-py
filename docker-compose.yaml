@@ -1,0 +1,9 @@
+services:
+  telegram-bot-py:
+    build: .
+    container_name: telegram-bot-py
+    restart: unless-stopped
+    environment:
+      TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}"
+    volumes:
+      - ./data:/app/data
