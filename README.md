@@ -11,7 +11,7 @@ Telegram doesn't have an `@everyone` mention. <br>
 **Solution:**<br>
 To be able to ping people we need their IDs first because Telegram doesn't give the list of participants of a chat by default, so we capture them when they send any message, store them in a json file and ask if they want to subscribe to mentions of `@everyone`.<br>
 <br>
-Whenever someone writes `@everyone`, the bot will send a message with the list of people that it has stored in the json file.<br>
+Whenever someone writes `@everyone`, the bot will send a message with the list of people that are marked as subscribed in the json file.<br>
 
 **NOTES:**
 - The json file is structured to save people per channel, so you can use this bot in many groups/chats.
