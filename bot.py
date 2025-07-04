@@ -1,7 +1,7 @@
 import os
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, UTC
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
 
@@ -54,6 +54,7 @@ def load_user_infos():
             return data
         except (json.JSONDecodeError, ValueError):
             logger.warning(f"{USER_FILE} is empty or corrupt. Starting fresh.")
+
     else:
         logger.info("No existing user info file found. Starting fresh.")
     return {"chats": {}}
@@ -68,11 +69,13 @@ def save_user_infos(data):
 async def collect_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     u = update.effective_user
     c = update.effective_chat
+
     if u and c:
-        chat_id = str(c.id)
-        user_id = str(u.id)
+        chat_id    = str(c.id)
+        user_id    = str(u.id)
         chat_title = c.title or c.username or "Private"
-        now_iso = datetime.utcnow().isoformat() + "Z"
+        now_iso    = datetime.now(UTC).isoformat()
+
         if chat_id not in user_infos["chats"]:
             user_infos["chats"][chat_id] = {
                 "chat_title": chat_title,
@@ -80,6 +83,7 @@ async def collect_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
             }
         chat_data = user_infos["chats"][chat_id]
         already = user_id in chat_data["users"]
+
         if not already:
             logger.info(f"Registered user {user_id} in chat {chat_id}: username={u.username}, first_name={u.first_name}")
         chat_data["chat_title"] = chat_title  # update if group title changed
@@ -95,17 +99,24 @@ async def keyword_trigger(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         await collect_user(update, context)
         msg_text = update.message.text.lower()
-        chat_id = str(update.effective_chat.id)
+        chat_id  = str(update.effective_chat.id)
+
         if "@everyone" in msg_text:
             logger.info(f"@everyone detected in chat {chat_id} by user_id={update.effective_user.id}")
             chat_data = user_infos["chats"].get(chat_id, {})
             chat_users = chat_data.get("users", {})
+
             if not chat_users:
-                await update.message.reply_text("No users to mention yet!")
+                await update.message.send_message("No users to mention yet!")
                 logger.info(f"No users to ping in chat {chat_id}.")
                 return
             mentions = []
+
+            caller_id = str(update.effective_user.id)
+            mentions = []
             for user_id, info in chat_users.items():
+                if user_id == caller_id:
+                    continue  # Skip the person who triggered the keyword
                 if info.get("username"):
                     mention = f"@{info['username']}"
                 elif info.get("first_name"):
@@ -113,11 +124,14 @@ async def keyword_trigger(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 else:
                     mention = f"[{user_id}](tg://user?id={user_id})"
                 mentions.append(mention)
+
             text = "Pinging everyone:\n" + " ".join(mentions)
-            await update.message.reply_text(
-                text,
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=text,
                 parse_mode="Markdown"
             )
+
             logger.info(f"Pinged {len(mentions)} users in chat {chat_id}")
     except Exception as e:
         logger.exception("Error in keyword_trigger handler")
@@ -126,7 +140,9 @@ if __name__ == "__main__":
     if not BOT_TOKEN:
         logging.critical("TELEGRAM_BOT_TOKEN environment variable not set.")
         raise ValueError("TELEGRAM_BOT_TOKEN environment variable not set.")
+
     logging.info("Starting Telegram bot...")
+
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), keyword_trigger))
     app.run_polling()
