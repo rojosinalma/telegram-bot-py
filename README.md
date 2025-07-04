@@ -17,6 +17,12 @@ Whenever someone writes @everyone, the bot will send a message with the list of 
 - The json file is structured to save people per channel, so you can use this bot in many groups/chats.
 - The bot will try to ping their username, but not every user may have one, so it also tries their First Name. If all fails, it pings the plain ID.
 
+## Use it<br>
+When people join a channel or chat for the first time after the bot was added, the bot will ask if they want to @subscribe to @everyone notifications.<br>
+They can leave the notifications with @unsubscribe.<br>
+<br>
+The bot will automatically remove people from the list if they kicked or leave the channel.
+
 ## Run it
 
 ```bash
