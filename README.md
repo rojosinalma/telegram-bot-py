@@ -5,10 +5,10 @@ Simple Telegram Bot to ping every person in a channel by using `@everyone`
 
 ## Rationale
 
-**Problem statement:**
+**Problem statement:**<br>
 Telegram doesn't provide the list of participants of a channel by default.<br>
 
-**Solution:**
+**Solution:**<br>
 To be able to ping people we need their IDs first, so we capture them when they send any message and store them in a json file.<br>
 Whenever someone writes @everyone, the bot will send a message with the list of people that it has stored in the json file.<br>
 
